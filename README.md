@@ -9,6 +9,11 @@ pip install pickle
 _In my opinion, if you want to install the libs that were defined above, you'd better install these on Ubuntu._
 > Note that, if you want to run these scripts on your external Nvidia GPU, you need to compile `dlib` and `opencv-python` packages from scratch. If you're going to run these scripts on CPU, you have to change `DETECTION_METHOD` constant to `hog`
 
+> **You can download the YOLOv4 weights, cfg, and classes here:** https://gurl.pro/6gzy5q
+> 
+> Make sure you change the file paths in `constants.py`
+
+
 <hr>
 
 ## 1 - Generating a face dataset
