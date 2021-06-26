@@ -37,13 +37,14 @@ class PersonTracker():
                         f'Exit Time={person.exit_time.strftime("%d %b %Y %H:%M:%S")}\n')
         f.close()
 
-    def send_server(self, name):
+    def send_server(self, name, roomId):
         for persons_activity in reversed(self.persons_activities):
             if persons_activity.name == name:
                 index = self.persons_activities.index(persons_activity)
                 data = {
                     "staffId": name.split('_')[2],
-                    "entryTime": self.persons_activities[index].entry_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                    "roomId":roomId,
+                    "entryTime": self.persons_activities[index].entry_time.strftime("%Y-%m-%dT%HH:%M:%S.%f"),
                     "exitTime": self.persons_activities[index].exit_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
                 }
                 x = requests.post('https://localhost:5001/api/StaffActivity', json=data, verify=False)

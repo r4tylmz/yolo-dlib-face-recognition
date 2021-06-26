@@ -11,8 +11,10 @@ from Constants import constants
 net = cv2.dnn.readNetFromDarknet(constants.MODELCONFIG, constants.MODELWEIGHTS)
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
+
 class Helpers:
-    
+
     def __init__(self, width, height):
         self.scale = 0.0
         self.cams = constants.cams_in_use
@@ -24,7 +26,7 @@ class Helpers:
         return (int(x * self.scale) for x in box)
 
     def get_box_center(self, box):
-        cx, cy = int((box[1] + box[3])/2), int((box[0] + box[2])/2)
+        cx, cy = int((box[1] + box[3]) / 2), int((box[0] + box[2]) / 2)
         return cx, cy
 
     def get_name_id(self, name):
@@ -89,8 +91,9 @@ class Helpers:
                 constants.append("person_ids", self.get_id(name), cam_id)
                 cv2.rectangle(self.drawing_frames[cam_id], (left, top), (right, bottom), (0, 0, 255), 1)
                 cv2.rectangle(self.drawing_frames[cam_id], (left, y), (right, y + 15), (0, 0, 255), -1)
-                cv2.putText(self.drawing_frames[cam_id], self.get_name_id(name).upper(), (left, y + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    
+                cv2.putText(self.drawing_frames[cam_id], self.get_name_id(name).upper(), (left, y + 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
     def yolo_find_objects(self, outputs, frame, drawing_frame, camIndex):
         hT, wT, cT = frame.shape
         bbox = []
@@ -123,14 +126,15 @@ class Helpers:
             cv2.rectangle(drawing_frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
             cx = int((x + x + w) / 2)
             cy = int((y + y + h) / 2)
-            constants.append("yolo_points",(cx, cy),camIndex)
-            cv2.putText(drawing_frame, f'{label} {int(conf * 100)}%', (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 0, 0), 1)
+            constants.append("yolo_points", (cx, cy), camIndex)
+            cv2.putText(drawing_frame, f'{label} {int(conf * 100)}%', (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.6,
+                        (255, 0, 0), 1)
 
     def show_yolo_bboxes(self, frames):
 
         for cam_id in constants.cams_in_use:
             blob = cv2.dnn.blobFromImage(frames[cam_id], 1 / 255.0, (constants.TARGET_WH, constants.TARGET_WH),
-                                        [0, 0, 0], 1, crop=False)
+                                         [0, 0, 0], 1, crop=False)
             net.setInput(blob)
 
             layer_names = net.getLayerNames()
@@ -139,39 +143,58 @@ class Helpers:
             outputs = net.forward(output_names)
             self.yolo_find_objects(outputs, frames[cam_id], self.drawing_frames[cam_id], cam_id)
 
+    def check_id_still_in_cam(self, id):
+        still_in_cam = False
+        for cam_id in constants.cams_in_use:
+            if id in constants.missing_staffs[cam_id]:
+                still_in_cam = True
+            else:
+                still_in_cam = False
+        return still_in_cam
+
+    def get_staff_credentials(self, id):
+        response = requests.get(f'https://localhost:5001/api/Staff/{id}', verify=False).json()
+        fullname = f"{response['name']}_{response['lastName']}_{response['id']}"
+        return fullname
+
     def track(self):
         for cam_id in constants.cams_in_use:
             frame = self.drawing_frames[cam_id]
             if len(constants.yolo_points[cam_id]) != 0:
                 objects = constants.ct.update(constants.person_ids[cam_id],
-                                                constants.yolo_points[cam_id],
-                                                constants.recognizer_points[cam_id],
-                                                cam_id)
+                                              constants.yolo_points[cam_id],
+                                              constants.recognizer_points[cam_id],
+                                              cam_id)
 
-                for (objectID, centroid) in objects.items():
-                    cv2.putText(frame, str(objectID), (centroid[0] - 10, centroid[1] - 10), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 255, 255), 1)
+                for (id, centroid) in objects.items():
+                    cv2.putText(frame, str(id), (centroid[0] - 10, centroid[1] - 10), cv2.FONT_HERSHEY_DUPLEX,
+                                0.6, (255, 255, 255), 1)
                     cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 4, (0, 255, 0), -1)
 
-
                     if 50 < int(centroid[0]) < (self.width - 50):
-                        constants.missing_staffs[objectID] = False
+                        constants.missing_staffs[id] = False
 
-                    if constants.missing_staffs[objectID]:
+                    if constants.missing_staffs[id]:
                         continue
 
                     if int(centroid[0]) < 50 or int(centroid[0]) > (self.width - 50):
-                        response = requests.get(f'https://localhost:5001/api/Staff/{objectID}', verify=False).json()
-                        fullname = f"{response['name']}_{response['lastName']}_{response['id']}"
-                        constants.pt[cam_id].mark_person_disappeared(fullname, datetime.datetime.now())
-                        constants.pt[cam_id].send_server(fullname)
-                        constants.missing_staffs[objectID] = True
-    
+                        if not self.check_id_still_in_cam(id):
+                            fullname = self.get_staff_credentials(id)
+                            constants.pt[cam_id].mark_person_disappeared(fullname, datetime.datetime.now())
+                            constants.pt[cam_id].send_server(fullname, cam_id)
+                            constants.missing_staffs[id] = True
+
     def draw_to_screen(self):
         for cam_id in constants.cams_in_use:
-            cv2.putText(self.drawing_frames[cam_id], f"Time: {datetime.datetime.now().strftime('%H:%M:%S')}",(int(self.width / 2), self.height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-            cv2.putText(self.drawing_frames[cam_id], f"Room Id:{cam_id}", (int(self.width / 2) - 150, self.height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-            cv2.line(self.drawing_frames[cam_id], (self.width - 50, 0), (self.width - 50, self.height), (255, 255, 255), 2)
+            cv2.putText(self.drawing_frames[cam_id], f"Time: {datetime.datetime.now().strftime('%H:%M:%S')}",
+                        (int(self.width / 2), self.height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.putText(self.drawing_frames[cam_id], f"Room Id:{cam_id}", (int(self.width / 2) - 150, self.height - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            cv2.line(self.drawing_frames[cam_id], (self.width - 50, 0), (self.width - 50, self.height), (255, 255, 255),
+                     2)
             cv2.line(self.drawing_frames[cam_id], (50, 0), (50, self.height), (255, 255, 255), 2)
 
     def get_concatenated_frames(self):
-        return np.concatenate([value for key,value in self.drawing_frames.items()], axis=1)
+        return np.concatenate([value for key, value in self.drawing_frames.items()], axis=1)
+
+
