@@ -7,7 +7,7 @@ import os
 # define the constants
 ENCODINGS_PATH = 'encodings.pickle'
 DETECTION_METHOD = 'cnn'
-DATASET_PATH = '/home/ylmz/PycharmProjects/face_dataset'
+DATASET_PATH = './face_dataset'
 
 imagePaths = list(paths.list_images(DATASET_PATH))
 

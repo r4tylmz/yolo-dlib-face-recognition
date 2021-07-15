@@ -8,14 +8,10 @@ from scipy.spatial import distance as dist
 class CentroidTracker():
     def __init__(self):
         self.person_id_centroids = OrderedDict()
-        self.initialized = False
 
     def initialize(self):
-        if self.initialized:
-            return
         for i in constants.cams_in_use:
             self.person_id_centroids[i] = OrderedDict()
-            self.initialized = True
 
     def update(self, person_ids, yolo_centroids, recognizer_centroids, cam_index):
         detected_faces_greater_than_centroids = len(recognizer_centroids) >= len(self.person_id_centroids[cam_index].values())
@@ -42,10 +38,10 @@ class CentroidTracker():
                     usedCols.add(col)
                 unusedRows = set(range(0, D.shape[0])).difference(usedRows)
                 unusedCols = set(range(0, D.shape[1])).difference(usedCols)
-                for row, col in zip(unusedRows, unusedCols):
+                """for row, col in zip(unusedRows, unusedCols):
                     self.person_id_centroids[cam_index] = OrderedDict(
                         (person_ids[row] if k == self.person_id_centroids[cam_index][row] else k, v) for k, v in
-                        self.person_id_centroids[cam_index])
+                        self.person_id_centroids[cam_index])"""
 
         else:
             y_centroids = np.array(yolo_centroids)
@@ -66,8 +62,8 @@ class CentroidTracker():
                 usedRows.add(row)
                 usedCols.add(col)
 
-        for staff_id in constants.missing_staffs[cam_index].keys():
-            if constants.missing_staffs[cam_index][staff_id] and staff_id in self.person_id_centroids[cam_index].keys():
+        for staff_id, value in constants.missing_staffs[cam_index].items():
+            if value == True and staff_id in self.person_id_centroids[cam_index].keys():
                 del self.person_id_centroids[cam_index][staff_id]
 
         return self.person_id_centroids[cam_index]

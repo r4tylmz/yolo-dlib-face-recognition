@@ -42,12 +42,13 @@ class PersonTracker():
             if persons_activity.name == name:
                 index = self.persons_activities.index(persons_activity)
                 data = {
+                    "roomId": roomId,
                     "staffId": name.split('_')[2],
-                    "roomId":roomId,
-                    "entryTime": self.persons_activities[index].entry_time.strftime("%Y-%m-%dT%HH:%M:%S.%f"),
+                    "entryTime": self.persons_activities[index].entry_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
                     "exitTime": self.persons_activities[index].exit_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
                 }
                 x = requests.post('https://localhost:5001/api/StaffActivity', json=data, verify=False)
+                print(x.text)
                 print(f"http: {x.status_code} id:{name.split('_')[2]} ==> Basarili sekilde sunucuya gonderildi")
                 del self.persons[name]
                 break

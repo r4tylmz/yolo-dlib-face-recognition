@@ -40,8 +40,9 @@ class Helpers:
         return int(split_name[2])
 
     def check_staff_missing(self, center, name, cam_id):
+        staff_id = self.get_id(name)
         if 50 < center < (self.width - 50):
-            constants.missing_staffs[cam_id][self.get_id(name)] = False
+            constants.missing_staffs[cam_id][staff_id] = False
 
     def release_cams(self, cams):
         for cam in cams:
@@ -94,7 +95,7 @@ class Helpers:
                 cv2.putText(self.drawing_frames[cam_id], self.get_name_id(name).upper(), (left, y + 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
-    def yolo_find_objects(self, outputs, frame, drawing_frame, camIndex):
+    def yolo_find_objects(self, outputs, frame, drawing_frame, cam_index):
         hT, wT, cT = frame.shape
         bbox = []
         class_ids = []
@@ -126,7 +127,7 @@ class Helpers:
             cv2.rectangle(drawing_frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
             cx = int((x + x + w) / 2)
             cy = int((y + y + h) / 2)
-            constants.append("yolo_points", (cx, cy), camIndex)
+            constants.append("yolo_points", (cx, cy), cam_index)
             cv2.putText(drawing_frame, f'{label} {int(conf * 100)}%', (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.6,
                         (255, 0, 0), 1)
 
@@ -143,13 +144,12 @@ class Helpers:
             outputs = net.forward(output_names)
             self.yolo_find_objects(outputs, frames[cam_id], self.drawing_frames[cam_id], cam_id)
 
-    def check_id_still_in_cam(self, id):
+    def check_id_still_in_cam(self, staff_id, current_cam_id):
         still_in_cam = False
         for cam_id in constants.cams_in_use:
-            if id in constants.missing_staffs[cam_id]:
-                still_in_cam = True
-            else:
-                still_in_cam = False
+            if current_cam_id != cam_id:
+                if staff_id in constants.missing_staffs[cam_id]:
+                    still_in_cam = constants.missing_staffs[cam_id][staff_id]
         return still_in_cam
 
     def get_staff_credentials(self, id):
@@ -158,7 +158,7 @@ class Helpers:
         return fullname
 
     def track(self):
-        for cam_id in constants.cams_in_use:
+        for cam_id in self.cams:
             frame = self.drawing_frames[cam_id]
             if len(constants.yolo_points[cam_id]) != 0:
                 objects = constants.ct.update(constants.person_ids[cam_id],
@@ -166,23 +166,22 @@ class Helpers:
                                               constants.recognizer_points[cam_id],
                                               cam_id)
 
-                for (id, centroid) in objects.items():
-                    cv2.putText(frame, str(id), (centroid[0] - 10, centroid[1] - 10), cv2.FONT_HERSHEY_DUPLEX,
-                                0.6, (255, 255, 255), 1)
+                for (staff_id, centroid) in objects.items():
+                    cv2.putText(frame, str(staff_id), (centroid[0] - 10, centroid[1] - 10), cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 255, 255), 1)
                     cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 4, (0, 255, 0), -1)
 
                     if 50 < int(centroid[0]) < (self.width - 50):
-                        constants.missing_staffs[id] = False
+                        constants.missing_staffs[cam_id][staff_id] = False
 
-                    if constants.missing_staffs[id]:
+                    if constants.missing_staffs[cam_id][staff_id]:
                         continue
 
                     if int(centroid[0]) < 50 or int(centroid[0]) > (self.width - 50):
-                        if not self.check_id_still_in_cam(id):
-                            fullname = self.get_staff_credentials(id)
+                        if not self.check_id_still_in_cam(staff_id,cam_id):
+                            constants.missing_staffs[cam_id][staff_id] = True
+                            fullname = self.get_staff_credentials(staff_id)
                             constants.pt[cam_id].mark_person_disappeared(fullname, datetime.datetime.now())
                             constants.pt[cam_id].send_server(fullname, cam_id)
-                            constants.missing_staffs[id] = True
 
     def draw_to_screen(self):
         for cam_id in constants.cams_in_use:
@@ -196,5 +195,3 @@ class Helpers:
 
     def get_concatenated_frames(self):
         return np.concatenate([value for key, value in self.drawing_frames.items()], axis=1)
-
-

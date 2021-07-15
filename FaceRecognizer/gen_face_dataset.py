@@ -19,7 +19,7 @@ r = requests.post(f"https://localhost:5001/api/Staff/", json=data, verify=False)
 index = r.json()["id"]
 
 credentials = f"{args.name}_{args.lastName}_{index}"
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 path = f'../face_dataset'
 person_path = os.path.join(path, credentials)
 
