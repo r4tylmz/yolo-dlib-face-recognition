@@ -1,19 +1,21 @@
 from collections import OrderedDict
 import pickle
-from Helpers.person import PersonTracker
-from Helpers.centroid_tracker import CentroidTracker
+from helpers.person_tracker import PersonTracker
+from helpers.centroid_tracker import CentroidTracker
 
-CLASSESFILE = '/media/ylmz/ARSIV/ubuntu/weights/class.names'
-MODELCONFIG = '/media/ylmz/ARSIV/ubuntu/weights/yolo.cfg'
-MODELWEIGHTS = '/media/ylmz/ARSIV/ubuntu/weights/yolov4-obj_final.weights'
-ENCODINGS_PATH = '/home/ylmz/PycharmProjects/yolo-dlib-face-recognition/encodings.pickle'
+BASEURL = 'https://localhost:5001/api'
+CLASSESFILE = 'FaceRecognizer/files/class.names'
+MODELCONFIG = 'FaceRecognizer/files/yolo.cfg'
+MODELWEIGHTS = 'FaceRecognizer/files/yolo.weights'
+ENCODINGS_PATH = 'FaceRecognizer/files/encodings.pickle'
+FACE_DATASET_PATH = 'FaceRecognizer/files/face_dataset'
 DETECTION_METHOD = 'cnn'
-DATA = pickle.loads(open(ENCODINGS_PATH, "rb").read())
-with open(CLASSESFILE, 'rt') as f: CLASSNAMES = f.read().rstrip('\n').split('\n')
-
 TARGET_WH = 320
 THRESHOLD = 0.85
 NMS_THRESHOLD = 0.3
+DATA = pickle.loads(open(ENCODINGS_PATH, "rb").read())
+with open(CLASSESFILE, 'rt') as f: CLASSNAMES = f.read().rstrip('\n').split('\n')
+
 
 cams_in_use = []
 
