@@ -2,25 +2,19 @@ import cv2
 import os
 import uuid
 import argparse
-import requests
+from utils import httpreq
+from constants import constants
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--name")
 parser.add_argument("--lastName")
 parser.add_argument("--phoneNumber")
 args = parser.parse_args()
-
-data = {
-    "name": args.name,
-    "lastName": args.lastName,
-    "phoneNumber": args.phoneNumber}
-r = requests.post(f"https://localhost:5001/api/Staff/", json=data, verify=False)
-
-index = r.json()["id"]
-
+index = httpreq.send_staff_credentials(args.name,args.lastName,args.phoneNumber)
 credentials = f"{args.name}_{args.lastName}_{index}"
-cap = cv2.VideoCapture(1)
-path = f'../face_dataset'
+
+cap = cv2.VideoCapture(0)
+path = constants.FACE_DATASET_PATH
 person_path = os.path.join(path, credentials)
 
 if not os.path.exists(path):

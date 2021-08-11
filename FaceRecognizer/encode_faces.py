@@ -1,16 +1,11 @@
 from imutils import paths
+from constants import constants
 import face_recognition
 import pickle
 import cv2
 import os
 
-# define the constants
-ENCODINGS_PATH = 'encodings.pickle'
-DETECTION_METHOD = 'cnn'
-DATASET_PATH = './face_dataset'
-
-imagePaths = list(paths.list_images(DATASET_PATH))
-
+imagePaths = list(paths.list_images(constants.FACE_DATASET_PATH))
 knownEncodings = []
 knownNames = []
 
@@ -21,7 +16,7 @@ for (i, imagePath) in enumerate(imagePaths):
     name = imagePath.split(os.path.sep)[-2]
     image = cv2.imread(imagePath)
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    boxes = face_recognition.face_locations(rgb, model=DETECTION_METHOD)
+    boxes = face_recognition.face_locations(rgb, model=constants.DETECTION_METHOD)
     encodings = face_recognition.face_encodings(rgb, boxes)
     for encoding in encodings:
         knownEncodings.append(encoding)
@@ -29,7 +24,7 @@ for (i, imagePath) in enumerate(imagePaths):
 
 print("Saving encodings to encodings.pickle ...")
 data = {"encodings": knownEncodings, "names": knownNames}
-f = open(ENCODINGS_PATH, "wb")
+f = open(constants.ENCODINGS_PATH, "wb")
 f.write(pickle.dumps(data))
 f.close()
 print("Encodings have been saved successfully.")
