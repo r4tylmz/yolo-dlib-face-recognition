@@ -1,19 +1,18 @@
 import datetime
-from collections import OrderedDict
-
 import cv2
 import face_recognition
 import imutils
 import numpy as np
-import requests
-from Constants import constants
+from collections import OrderedDict
+from constants import constants
+from utils import httpreq
 
 net = cv2.dnn.readNetFromDarknet(constants.MODELCONFIG, constants.MODELWEIGHTS)
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 
-class Helpers:
+class Helper:
 
     def __init__(self, width, height):
         self.scale = 0.0
@@ -152,10 +151,6 @@ class Helpers:
                     still_in_cam = constants.missing_staffs[cam_id][staff_id]
         return still_in_cam
 
-    def get_staff_credentials(self, id):
-        response = requests.get(f'https://localhost:5001/api/Staff/{id}', verify=False).json()
-        fullname = f"{response['name']}_{response['lastName']}_{response['id']}"
-        return fullname
 
     def track(self):
         for cam_id in self.cams:
@@ -179,7 +174,7 @@ class Helpers:
                     if int(centroid[0]) < 50 or int(centroid[0]) > (self.width - 50):
                         if not self.check_id_still_in_cam(staff_id,cam_id):
                             constants.missing_staffs[cam_id][staff_id] = True
-                            fullname = self.get_staff_credentials(staff_id)
+                            fullname = httpreq.get_staff_credentials_by_id(staff_id)
                             constants.pt[cam_id].mark_person_disappeared(fullname, datetime.datetime.now())
                             constants.pt[cam_id].send_server(fullname, cam_id)
 
@@ -194,4 +189,4 @@ class Helpers:
             cv2.line(self.drawing_frames[cam_id], (50, 0), (50, self.height), (255, 255, 255), 2)
 
     def get_concatenated_frames(self):
-        return np.concatenate([value for key, value in self.drawing_frames.items()], axis=1)
+        return np.concatenate([value for _, value in self.drawing_frames.items()], axis=1)
