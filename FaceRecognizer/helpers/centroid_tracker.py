@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 import numpy as np
-from Constants import constants
+from constants import constants
 from scipy.spatial import distance as dist
 
 
@@ -36,9 +36,10 @@ class CentroidTracker():
 
                     usedRows.add(row)
                     usedCols.add(col)
+                """
                 unusedRows = set(range(0, D.shape[0])).difference(usedRows)
                 unusedCols = set(range(0, D.shape[1])).difference(usedCols)
-                """for row, col in zip(unusedRows, unusedCols):
+                for row, col in zip(unusedRows, unusedCols):
                     self.person_id_centroids[cam_index] = OrderedDict(
                         (person_ids[row] if k == self.person_id_centroids[cam_index][row] else k, v) for k, v in
                         self.person_id_centroids[cam_index])"""
