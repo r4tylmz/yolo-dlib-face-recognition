@@ -1,16 +1,5 @@
 from collections import OrderedDict
-import requests
-import urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-class Person():
-    def __init__(self, name, entry_time, exit_time):
-        self.name = name
-        self.entry_time = entry_time
-        self.exit_time = exit_time
-
+from entities.person import Person
 
 class PersonTracker():
     def __init__(self):
@@ -37,18 +26,13 @@ class PersonTracker():
                         f'Exit Time={person.exit_time.strftime("%d %b %Y %H:%M:%S")}\n')
         f.close()
 
-    def send_server(self, name, roomId):
+    def send_server(self, name, room_id):
         for persons_activity in reversed(self.persons_activities):
             if persons_activity.name == name:
                 index = self.persons_activities.index(persons_activity)
-                data = {
-                    "roomId": roomId,
-                    "staffId": name.split('_')[2],
-                    "entryTime": self.persons_activities[index].entry_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                    "exitTime": self.persons_activities[index].exit_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
-                }
-                x = requests.post('https://localhost:5001/api/StaffActivity', json=data, verify=False)
-                print(x.text)
-                print(f"http: {x.status_code} id:{name.split('_')[2]} ==> Basarili sekilde sunucuya gonderildi")
+                entry = self.persons_activities[index].entry_time
+                exit = self.persons_activities[index].exit_time
+                id = name.split('_')[2]
+                httpreq.send_staff_activity(room_id,id,entry,exit)
                 del self.persons[name]
                 break
