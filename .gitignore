@@ -126,4 +126,6 @@ dmypy.json
 *.pickle
 .vscode
 .idea
-deeplearning/
+yolo.cfg
+*.weights
+class.names
